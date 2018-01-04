@@ -1,79 +1,37 @@
+//https://docs.microsoft.com/en-us/dotnet/framework/network-programming/synchronous-client-socket-example
+
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-public class SynchronousSocketClient
+namespace ZYNET
 {
-
-    public static void StartClient()
+    public class Client
     {
-        // Data buffer for incoming data.  
-        byte[] bytes = new byte[1024];
-
-        // Connect to a remote device.  
-        try
+        public static void Main()
         {
-            // Establish the remote endpoint for the socket.  
-            // This example uses port 11000 on the local computer.  
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
-            IPEndPoint remoteEP = new IPEndPoint(ipAddress, 11000);
+            IPAddress serverAddr = IPAddress.Parse("127.0.0.1");
 
-            // Create a TCP/IP  socket.  
-            //This will cause the error "No connection could be made because the target machine actively refused it".
+            IPEndPoint remoteEP = new IPEndPoint(serverAddr, 8001);
+
             //Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            //This is the right way to do it.
-            Socket sender = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
+            //This will cause the error "No connection could be made because the target machine actively refused it".
 
-            // Connect the socket to the remote endpoint. Catch any errors.  
-            try
-            {
-                sender.Connect(remoteEP);
+            Socket client = new Socket(serverAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-                Console.WriteLine("Socket connected to {0}",
-                    sender.RemoteEndPoint.ToString());
+            client.Connect(remoteEP);
 
-                // Encode the data string into a byte array.  
-                byte[] msg = Encoding.ASCII.GetBytes("This is a test<EOF>");
+            Console.WriteLine("Socket connected to {0}",
+                    client.RemoteEndPoint.ToString());
 
-                // Send the data through the socket.  
-                int bytesSent = sender.Send(msg);
+            string content = "hello world";
 
-                // Receive the response from the remote device.  
-                int bytesRec = sender.Receive(bytes);
-                Console.WriteLine("Echoed test = {0}",
-                    Encoding.ASCII.GetString(bytes, 0, bytesRec));
+            byte[] bytes = Encoding.ASCII.GetBytes(content);
 
-                // Release the socket.  
-                sender.Shutdown(SocketShutdown.Both);
-                sender.Close();
+            client.Send(bytes);
 
-            }
-            catch (ArgumentNullException ane)
-            {
-                Console.WriteLine("ArgumentNullException : {0}", ane.ToString());
-            }
-            catch (SocketException se)
-            {
-                Console.WriteLine("SocketException : {0}", se.ToString());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Unexpected exception : {0}", e.ToString());
-            }
-
+            Console.Read();
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.ToString());
-        }
-    }
-
-    public static int Main(String[] args)
-    {
-        StartClient();
-        return 0;
     }
 }

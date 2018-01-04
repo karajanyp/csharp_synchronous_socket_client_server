@@ -5,83 +5,44 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-public class SynchronousSocketListener
+namespace ZYNET
 {
-
-    // Incoming data from the client.  
-    public static string data = null;
-
-    public static void StartListening()
+    public class Server
     {
-        // Data buffer for incoming data.  
-        byte[] bytes = new Byte[1024];
+        public const int backlog = 10;
 
-        // Establish the local endpoint for the socket.  
-        // Dns.GetHostName returns the name of the   
-        // host running the application.  
-        IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-        IPAddress ipAddress = ipHostInfo.AddressList[0];
-        IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
-
-        // Create a TCP/IP socket.  
-        Socket listener = new Socket(ipAddress.AddressFamily,
-            SocketType.Stream, ProtocolType.Tcp);
-
-        // Bind the socket to the local endpoint and   
-        // listen for incoming connections.  
-        try
+        public static void Main()
         {
+            IPAddress serverAddr = IPAddress.Parse("127.0.0.1");
+
+            IPEndPoint listenEP = new IPEndPoint(serverAddr, 8001);
+
+            Socket server = new Socket(serverAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
             //If we comment out the line below,we will get a "Unhandled Exception: System.Net.Sockets.SocketException: An invalid argument was supplied
             //at System.Net.Sockets.Socket.Listen(Int32 backlog)" error.
-            listener.Bind(localEndPoint);
+            server.Bind(listenEP);
 
-            listener.Listen(10);
+            server.Listen(backlog);
 
-            // Start listening for connections.  
-            while (true)
-            {
-                Console.WriteLine("Waiting for a connection...");
-                // Program is suspended while waiting for an incoming connection.  
-                Socket handler = listener.Accept();
-                data = null;
+            Socket client = server.Accept();
 
-                // An incoming connection needs to be processed.  
-                while (true)
-                {
-                    bytes = new byte[1024];
-                    int bytesRec = handler.Receive(bytes);
-                    data += Encoding.ASCII.GetString(bytes, 0, bytesRec);
-                    if (data.IndexOf("<EOF>") > -1)
-                    {
-                        break;
-                    }
-                }
+            Console.WriteLine("Accept socket {0}",
+                    client.RemoteEndPoint.ToString());
 
-                // Show the data on the console.  
-                Console.WriteLine("Text received : {0}", data);
+            string content = "hello world";
 
-                // Echo the data back to the client.  
-                byte[] msg = Encoding.ASCII.GetBytes(data);
+            byte[] bytes = Encoding.ASCII.GetBytes(content);
 
-                handler.Send(msg);
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-            }
+            byte[] bytesRecv = new byte[1024];
 
+            client.Receive(bytesRecv);
+
+            string recv = Encoding.ASCII.GetString(bytesRecv);
+
+            Console.WriteLine(recv);
+
+            Console.Read();
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.ToString());
-        }
-
-        Console.WriteLine("\nPress ENTER to continue...");
-        Console.Read();
-
-    }
-
-    public static int Main(String[] args)
-    {
-        StartListening();
-        return 0;
     }
 }
